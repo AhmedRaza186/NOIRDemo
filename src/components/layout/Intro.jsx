@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
 const Intro = ({ onReveal, onComplete }) => {
@@ -62,7 +62,7 @@ const Intro = ({ onReveal, onComplete }) => {
   return (
     <div 
       ref={introRef}
-      className="fixed inset-0 z-[100] bg-noir-green flex flex-col items-center justify-center text-noir-cream pointer-events-none"
+      className="surface-brand fixed inset-0 z-[100] bg-noir-green flex flex-col items-center justify-center text-noir-cream pointer-events-none"
     >
       <div className="flex flex-col items-center justify-center gap-6 md:gap-8">
         <div ref={estRef} className="opacity-0">
@@ -72,7 +72,9 @@ const Intro = ({ onReveal, onComplete }) => {
         <div ref={logoRef} className="opacity-0 w-[140px] md:w-[180px] lg:w-[220px]">
           <img 
             src="/assets/noir/brand/logo-primary-white.png" 
-            alt="Noir Logo" 
+            alt="Noir Logo"
+            width={204}
+            height={192}
             className="w-full h-auto object-contain"
           />
         </div>

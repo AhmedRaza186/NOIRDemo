@@ -1,24 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import gsap from 'gsap';
+import { useGsap } from '../../hooks/useGsap';
+import { getLenis } from '../../lib/lenis';
+import { useCart } from '../../state/cart';
+import { useTheme } from '../../state/theme';
+import OpenBadge from '../ui/OpenBadge';
+import ThemeToggle from '../ui/ThemeToggle';
+
+const NAV_LINKS = [
+  { href: '#menu', label: 'MENU' },
+  { href: '#space', label: 'EXPERIENCE' },
+  { href: '#courts', label: 'COURTS' },
+  { href: '#visit', label: 'VISIT' },
+];
 
 const Navbar = () => {
   const navRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  const mobileLinksRef = useRef([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const tlRef = useRef(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { count, open: openCart } = useCart();
+  const { theme } = useTheme();
+  const orderLabel = count ? `ORDER (${count})` : 'ORDER';
+  const logoSrc = isMobileMenuOpen || theme === 'night'
+    ? '/assets/noir/brand/logo-primary-white.png'
+    : '/assets/noir/brand/logo-primary.png';
 
-  // Set up mobile links refs
-  const addToLinksRef = (el) => {
-    if (el && !mobileLinksRef.current.includes(el)) {
-      mobileLinksRef.current.push(el);
-    }
-  };
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // 1. Initial Load Animation
+  useGsap(({ reduceMotion }) => {
+    // 1. Initial Load Animation
+    if (!reduceMotion) {
       gsap.from(navRef.current, {
         y: -50,
         opacity: 0,
@@ -26,105 +37,144 @@ const Navbar = () => {
         ease: 'power3.out',
         delay: 0.2
       });
+    }
 
-      // 2. Setup Mobile Menu Animation
-      gsap.set(mobileMenuRef.current, { yPercent: -100 });
-      
-      tlRef.current = gsap.timeline({ paused: true });
-      tlRef.current.to(mobileMenuRef.current, {
+    // 2. Setup Mobile Menu Animation (instant under reduced motion)
+    gsap.set(mobileMenuRef.current, { yPercent: -100 });
+
+    tlRef.current = gsap.timeline({ paused: true })
+      .to(mobileMenuRef.current, {
         yPercent: 0,
         duration: 0.8,
         ease: 'power4.inOut'
       })
-      .fromTo(mobileLinksRef.current,
+      .fromTo('.mobile-link',
         { y: 40, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power3.out' },
         "-=0.4"
       );
-    }, navRef);
 
-    return () => ctx.revert();
-  }, []);
+    if (reduceMotion) tlRef.current.duration(0.01);
+  }, navRef, { allowReducedMotion: true });
 
-  // Handle open/close toggle
+  // Handle open/close toggle: lock scroll and allow Escape to close
   useEffect(() => {
-    if (tlRef.current) {
-      if (isMobileMenuOpen) {
-        tlRef.current.play();
-        document.body.style.overflow = 'hidden'; // Lock scroll
-      } else {
-        tlRef.current.reverse();
-        document.body.style.overflow = ''; // Unlock scroll
-      }
+    const tl = tlRef.current;
+    if (!tl) return;
+
+    if (!isMobileMenuOpen) {
+      tl.reverse();
+      return;
     }
-    
+
+    tl.play();
+    getLenis()?.stop();
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+
     return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      getLenis()?.start();
       document.body.style.overflow = '';
     };
   }, [isMobileMenuOpen]);
 
-  const closeMenu = () => setIsMobileMenuOpen(false);
+  // Close the mobile menu if the viewport grows past the mobile breakpoint
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e) => {
+      if (e.matches) setIsMobileMenuOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Resume Lenis synchronously so its anchor handler can scroll on this same click
+  const closeMenu = () => {
+    getLenis()?.start();
+    setIsMobileMenuOpen(false);
+  };
+
+  const openOrderFromMenu = () => {
+    closeMenu();
+    openCart();
+  };
 
   return (
-    <header 
-      ref={navRef} 
+    <header
+      ref={navRef}
       className="fixed top-0 left-0 right-0 z-50 py-3 md:py-4 px-6 md:px-12 lg:px-20 bg-noir-cream/85 backdrop-blur-md text-noir-black border-b border-noir-border/30"
     >
       <div className="flex items-center justify-between w-full max-w-[1440px] mx-auto">
         {/* Logo */}
         <a href="/" className="relative z-50 flex items-center group" onClick={closeMenu}>
-          <img 
-            src={isMobileMenuOpen ? "/assets/noir/brand/logo-primary-white.png" : "/assets/noir/brand/logo-primary.png"} 
-            alt="Noir Cafe & Pizzeria" 
+          <img
+            src={logoSrc}
+            alt="Noir Cafe & Pizzeria"
+            width={204}
+            height={192}
             className="w-[90px] md:w-[110px] lg:w-[120px] h-auto object-contain hover-fade"
           />
         </a>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-10">
-          <a href="#menu" className="label-text text-noir-black hover-fade">MENU</a>
-          <a href="#space" className="label-text text-noir-black hover-fade">EXPERIENCE</a>
-          <a href="#visit" className="label-text text-noir-black hover-fade">VISIT</a>
-          <a 
-            href="https://wa.me/923363355558" 
-            className="label-text text-noir-black border border-noir-black px-5 py-2 hover:bg-noir-black hover:text-noir-cream transition-colors duration-300"
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          <OpenBadge className="hidden xl:inline-flex text-noir-muted mr-2" />
+          {NAV_LINKS.map(link => (
+            <a key={link.href} href={link.href} className="label-text text-noir-black hover-fade">{link.label}</a>
+          ))}
+          <button
+            type="button"
+            onClick={openCart}
+            className="label-text text-noir-black border border-noir-black px-5 py-2 hover:bg-noir-black hover:text-noir-cream transition-colors duration-300 tabular-nums"
           >
-            ORDER / WHATSAPP
-          </a>
+            {orderLabel}
+          </button>
+          <ThemeToggle className="-mr-2" />
         </nav>
 
-        {/* Mobile Menu Trigger */}
-        <button 
-          className="md:hidden relative z-50 p-2 focus:outline-none hover-fade"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle menu"
-          aria-expanded={isMobileMenuOpen}
-        >
-          {isMobileMenuOpen ? (
-            <X size={28} strokeWidth={1.5} className="text-noir-cream" />
-          ) : (
-            <Menu size={28} strokeWidth={1.5} className="text-noir-black" />
-          )}
-        </button>
+        {/* Mobile controls */}
+        <div className="md:hidden relative z-50 flex items-center gap-1">
+          <ThemeToggle className={isMobileMenuOpen ? 'text-white' : 'text-noir-black'} />
+          <button
+            className="p-2 hover-fade"
+            onClick={() => setIsMobileMenuOpen(open => !open)}
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            {isMobileMenuOpen ? (
+              <X size={28} strokeWidth={1.5} className="text-white" />
+            ) : (
+              <Menu size={28} strokeWidth={1.5} className="text-noir-black" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      <div 
+      {/* Mobile Menu Overlay (inert while closed so its links can't be tabbed to) */}
+      <nav
         ref={mobileMenuRef}
-        className="fixed top-0 left-0 w-full h-[100dvh] bg-noir-green text-noir-cream flex flex-col justify-center items-center space-y-10 md:hidden z-40"
+        id="mobile-menu"
+        inert={!isMobileMenuOpen}
+        className="surface-brand fixed top-0 left-0 w-full h-[100dvh] bg-noir-green text-noir-cream flex flex-col justify-center items-center space-y-10 md:hidden z-40"
       >
-        <a ref={addToLinksRef} href="#menu" onClick={closeMenu} className="font-display text-4xl hover-fade">MENU</a>
-        <a ref={addToLinksRef} href="#space" onClick={closeMenu} className="font-display text-4xl hover-fade">EXPERIENCE</a>
-        <a ref={addToLinksRef} href="#visit" onClick={closeMenu} className="font-display text-4xl hover-fade">VISIT</a>
-        <a 
-          ref={addToLinksRef}
-          href="#visit" 
-          onClick={closeMenu} 
-          className="font-display text-2xl border-b border-current pb-1 mt-4 hover-fade"
+        {NAV_LINKS.map(link => (
+          <a key={link.href} href={link.href} onClick={closeMenu} className="mobile-link font-display text-4xl hover-fade">{link.label}</a>
+        ))}
+        <button
+          type="button"
+          onClick={openOrderFromMenu}
+          className="mobile-link font-display text-2xl border-b border-current pb-1 mt-4 hover-fade tabular-nums"
         >
-          ORDER / WHATSAPP
-        </a>
-      </div>
+          {count ? `YOUR ORDER (${count})` : 'START AN ORDER'}
+        </button>
+        <OpenBadge className="mobile-link text-noir-cream/70 pt-4" />
+      </nav>
     </header>
   );
 };

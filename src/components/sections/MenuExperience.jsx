@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from '../../hooks/useGsap';
+import { MENU_PDF_URL } from '../../data/contact';
+import { MENU_CATEGORIES } from '../../data/menu';
+import { formatPrice } from '../../lib/format';
+import AddToOrder from '../ui/AddToOrder';
 
 const MenuExperience = () => {
   const sectionRef = useRef(null);
@@ -11,93 +13,52 @@ const MenuExperience = () => {
   const imageWrapperRef = useRef(null);
   const detailImageWrapperRef = useRef(null);
 
-  const menuData = [
-    {
-      title: "PIZZAS",
-      items: [
-        { name: "Fajita", price: "1150" },
-        { name: "BBQ", price: "1150" },
-        { name: "Ranch Supreme", price: "1250" }
-      ]
-    },
-    {
-      title: "PASTA",
-      items: [
-        { name: "Fettuccine Alfredo", price: "1890" },
-        { name: "Tuscan Tomato", price: "1990" }
-      ]
-    },
-    {
-      title: "COFFEE",
-      items: [
-        { name: "Cappuccino / Latte", price: "600" },
-        { name: "Classics", price: "750" },
-        { name: "House Special", price: "790" }
-      ]
-    },
-    {
-      title: "SIGNATURES",
-      items: [
-        { name: "Signature Frappe", price: "850" },
-        { name: "Purely Iced Matcha", price: "990" }
-      ]
-    }
-  ];
+  useGsap(() => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: 'top 75%',
+        end: 'bottom 20%',
+        toggleActions: 'play none none reverse'
+      }
+    });
 
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 75%',
-          end: 'bottom 20%',
-          toggleActions: 'play none none reverse'
-        }
-      });
-
-      // Heading reveal
-      tl.fromTo('.menu-heading-line',
-        { yPercent: 100, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' }
-      )
-      // Description reveal
-      .fromTo('.menu-desc',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },
-        '-=0.6'
-      )
-      // Menu categories stagger reveal
-      .fromTo(menuCategoriesRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' },
-        '-=0.4'
-      )
-      // CTA reveal
-      .fromTo('.menu-cta',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' },
-        '-=0.4'
-      )
-      // Main image clip-path reveal
-      .fromTo(imageWrapperRef.current,
-        { clipPath: 'inset(100% 0% 0% 0%)' },
-        { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.2, ease: 'power3.inOut' },
-        '-=1.5'
-      )
-      // Secondary image clip-path reveal
-      .fromTo(detailImageWrapperRef.current,
-        { clipPath: 'inset(100% 0% 0% 0%)', y: 30 },
-        { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: 1.2, ease: 'power3.inOut' },
-        '-=1.0'
-      );
-
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+    // Heading reveal
+    tl.fromTo('.menu-heading-line',
+      { yPercent: 100, opacity: 0 },
+      { yPercent: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' }
+    )
+    // Description reveal
+    .fromTo('.menu-desc',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },
+      '-=0.6'
+    )
+    // Menu categories stagger reveal
+    .fromTo(menuCategoriesRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' },
+      '-=0.4'
+    )
+    // CTA reveal
+    .fromTo('.menu-cta',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' },
+      '-=0.4'
+    )
+    // Main image clip-path reveal
+    .fromTo(imageWrapperRef.current,
+      { clipPath: 'inset(100% 0% 0% 0%)' },
+      { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.2, ease: 'power3.inOut' },
+      '-=1.5'
+    )
+    // Secondary image clip-path reveal
+    .fromTo(detailImageWrapperRef.current,
+      { clipPath: 'inset(100% 0% 0% 0%)', y: 30 },
+      { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: 1.2, ease: 'power3.inOut' },
+      '-=1.0'
+    );
+  }, sectionRef);
 
   return (
     <section 
@@ -114,15 +75,15 @@ const MenuExperience = () => {
           </div>
           
           <h2 ref={headingRef} className="text-[3.5rem] md:text-[5rem] lg:text-[6rem] font-display font-medium leading-[0.85] tracking-tight uppercase mb-8">
-            <div className="overflow-hidden pb-2">
+            <span className="block overflow-hidden pb-2">
               <span className="block menu-heading-line">SOMETHING</span>
-            </div>
-            <div className="overflow-hidden pb-2">
+            </span>
+            <span className="block overflow-hidden pb-2">
               <span className="block menu-heading-line">FOR EVERY</span>
-            </div>
-            <div className="overflow-hidden pb-2">
+            </span>
+            <span className="block overflow-hidden pb-2">
               <span className="block menu-heading-line text-noir-green">MOOD.</span>
-            </div>
+            </span>
           </h2>
           
           <div className="max-w-md mb-16 overflow-hidden">
@@ -133,7 +94,7 @@ const MenuExperience = () => {
 
           {/* Curated Menu List */}
           <div className="flex flex-col gap-12 mb-16">
-            {menuData.map((category, idx) => (
+            {MENU_CATEGORIES.map((category, idx) => (
               <div 
                 key={category.title} 
                 ref={el => menuCategoriesRef.current[idx] = el}
@@ -144,13 +105,14 @@ const MenuExperience = () => {
                 </h3>
                 <ul className="flex flex-col gap-4">
                   {category.items.map(item => (
-                    <li key={item.name} className="flex items-end justify-between group cursor-default">
+                    <li key={item.id} className="flex items-center justify-between gap-4 group">
                       <span className="text-lg font-light group-hover:text-noir-green transition-colors duration-300 relative">
                         {item.name}
                         <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-noir-green group-hover:w-full transition-all duration-300"></span>
                       </span>
-                      <div className="flex-grow border-b border-dotted border-noir-border/50 mx-4 mb-2 opacity-50"></div>
-                      <span className="text-lg font-medium">Rs. {item.price}</span>
+                      <div className="flex-grow border-b border-dotted border-noir-border opacity-60"></div>
+                      <span className="text-lg font-medium tabular-nums">{formatPrice(item.price)}</span>
+                      <AddToOrder id={item.id} className="shrink-0" />
                     </li>
                   ))}
                 </ul>
@@ -160,7 +122,7 @@ const MenuExperience = () => {
 
           <div className="menu-cta self-start">
             <a 
-              href="/NOIR - Final Menu.pdf" 
+              href={MENU_PDF_URL} 
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 border border-noir-black px-6 py-3 text-sm tracking-[0.2em] uppercase font-medium hover:bg-noir-black hover:text-noir-cream transition-colors duration-300"
@@ -178,7 +140,7 @@ const MenuExperience = () => {
               ref={imageWrapperRef} 
               className="absolute top-0 right-0 w-full lg:w-[85%] h-[75%] lg:h-[80%] overflow-hidden bg-noir-dark group"
             >
-              <img 
+              <img loading="lazy" decoding="async" 
                 src="/assets/noir/food/pizza.webp" 
                 alt="Noir Wood-fired Pizza" 
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out"
@@ -190,7 +152,7 @@ const MenuExperience = () => {
               ref={detailImageWrapperRef}
               className="absolute bottom-0 left-0 lg:-left-12 w-[60%] lg:w-[55%] aspect-square border-8 border-noir-cream overflow-hidden z-20 shadow-xl group"
             >
-              <img 
+              <img loading="lazy" decoding="async" 
                 src="/assets/noir/food/coffee.jpg" 
                 alt="Noir Signature Coffee" 
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out"

@@ -1,57 +1,75 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { setLenis } from './lib/lenis';
 import Intro from './components/layout/Intro';
 import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
 import SippinBag from './components/sections/SippinBag';
 import MenuExperience from './components/sections/MenuExperience';
 import SpaceExperience from './components/sections/SpaceExperience';
+import Signatures from './components/sections/Signatures';
+import Courts from './components/sections/Courts';
 import VisitNoir from './components/sections/VisitNoir';
 import Footer from './components/layout/Footer';
+import CartDrawer from './components/order/CartDrawer';
+import CartButton from './components/order/CartButton';
+import Cursor from './components/ui/Cursor';
+
+const INTRO_SEEN_KEY = 'noir:intro-seen';
+
+const hasSeenIntro = () => {
+  try {
+    return sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
 
 function App() {
-  const [showApp, setShowApp] = useState(false);
-  const [introMounted, setIntroMounted] = useState(true);
+  // The intro plays once per browser session
+  const [skipIntro] = useState(hasSeenIntro);
+  const [showApp, setShowApp] = useState(skipIntro);
+  const [introMounted, setIntroMounted] = useState(!skipIntro);
 
-  // Initialize smooth scrolling with Lenis
+  // Smooth scrolling, driven by GSAP's ticker so ScrollTrigger stays in sync
   useEffect(() => {
-    // Only initialize Lenis after the app content is revealed
     if (!showApp) return;
 
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      direction: 'vertical',
-      gestureDirection: 'vertical',
-      smooth: true,
-      mouseMultiplier: 1,
-      smoothTouch: false,
-      touchMultiplier: 2,
-      infinite: false,
+      // Anchor jumps honour each section's scroll-margin-top (index.css) to clear the navbar
+      anchors: true,
+      respectReducedMotion: true,
+      autoRaf: false,
     });
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    setLenis(lenis);
 
-    requestAnimationFrame(raf);
-
-    // Make sure scroll is locked while intro is playing
-    document.body.style.overflow = 'auto';
-    window.scrollTo(0, 0);
+    if (!skipIntro) window.scrollTo(0, 0);
 
     return () => {
+      gsap.ticker.remove(tick);
       lenis.destroy();
+      setLenis(null);
     };
-  }, [showApp]);
+  }, [showApp, skipIntro]);
 
-  // Lock scroll initially
-  useEffect(() => {
-    if (introMounted) {
-      document.body.style.overflow = 'hidden';
+  const handleIntroComplete = () => {
+    try {
+      sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+    } catch {
+      // Storage unavailable (private mode) — intro simply plays again next visit
     }
-  }, [introMounted]);
+    setIntroMounted(false);
+  };
 
   return (
     <>
@@ -62,17 +80,23 @@ function App() {
             <Hero />
             <SippinBag />
             <MenuExperience />
+            <Signatures />
             <SpaceExperience />
+            <Courts />
             <VisitNoir />
           </main>
           <Footer />
+          <CartButton />
+          <CartDrawer />
         </div>
       )}
 
+      <Cursor />
+
       {introMounted && (
-        <Intro 
-          onReveal={() => setShowApp(true)} 
-          onComplete={() => setIntroMounted(false)} 
+        <Intro
+          onReveal={() => setShowApp(true)}
+          onComplete={handleIntroComplete}
         />
       )}
     </>

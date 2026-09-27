@@ -1,64 +1,54 @@
-import React, { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from '../../hooks/useGsap';
+import { ADDRESS, HOURS, MAPS_EMBED_URL, MAPS_URL, PHONE_DISPLAY, WHATSAPP_URL } from '../../data/contact';
+import OpenBadge from '../ui/OpenBadge';
 
 const VisitNoir = () => {
   const sectionRef = useRef(null);
   const contentRef = useRef(null);
   const imageWrapperRef = useRef(null);
-  const imageRef = useRef(null);
 
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+  useGsap(({ isMobile }) => {
+    // 1. Entrance Animations for Content
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: 'top 75%',
+        toggleActions: 'play none none reverse'
+      }
+    });
 
-    const ctx = gsap.context(() => {
-      // 1. Entrance Animations for Content
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 75%',
-          toggleActions: 'play none none reverse'
-        }
-      });
+    // Staggered reveal for text elements
+    tl.fromTo('.visit-reveal',
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, stagger: 0.15, ease: 'power3.out' }
+    );
 
-      // Staggered reveal for text elements
-      tl.fromTo('.visit-reveal',
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.15, ease: 'power3.out' }
-      );
+    // 2. Scroll-Driven Image/Map Animation
 
-      // 2. Scroll-Driven Image/Map Animation
-      const isMobile = window.innerWidth < 768;
+    const scrubTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: 'top bottom',
+        end: 'center center',
+        scrub: 1.5
+      }
+    });
 
-      const scrubTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top bottom',
-          end: 'center center',
-          scrub: 1.5
-        }
-      });
-
-      // Subtle clip-path reveal for the map container
-      scrubTl.fromTo(imageWrapperRef.current,
-        { clipPath: isMobile ? 'inset(0% 0% 0% 0%)' : 'inset(10% 0% 10% 0%)' },
-        { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none' },
-        0
-      );
-
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+    // Subtle clip-path reveal for the map container
+    scrubTl.fromTo(imageWrapperRef.current,
+      { clipPath: isMobile ? 'inset(0% 0% 0% 0%)' : 'inset(10% 0% 10% 0%)' },
+      { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none' },
+      0
+    );
+  }, sectionRef);
 
   return (
     <section 
       ref={sectionRef} 
       id="visit"
-      className="relative min-h-[90vh] w-full flex flex-col justify-center py-24 md:py-32 px-6 md:px-12 lg:px-20 bg-noir-green text-noir-cream overflow-hidden"
+      className="surface-brand relative min-h-[90vh] w-full flex flex-col justify-center py-24 md:py-32 px-6 md:px-12 lg:px-20 bg-noir-green text-noir-cream overflow-hidden"
     >
       <div className="max-w-[1440px] w-full mx-auto flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-24">
         
@@ -77,31 +67,32 @@ const VisitNoir = () => {
             {/* Location & Address */}
             <div className="flex flex-col gap-2 visit-reveal">
               <h3 className="text-sm tracking-[0.2em] uppercase text-noir-cream/60 mb-1">LOCATION</h3>
-              <p className="text-xl md:text-2xl font-light">Tipu Sultan Road</p>
+              <p className="text-xl md:text-2xl font-light">{ADDRESS.street}</p>
               <p className="text-base md:text-lg font-light text-noir-cream/80 max-w-[280px]">
-                Plot 24–25, Block 07, DMCHS, Karachi, Pakistan
+                {ADDRESS.plot}, {ADDRESS.city}, {ADDRESS.country}
               </p>
             </div>
 
             {/* Hours */}
             <div className="flex flex-col gap-2 visit-reveal">
               <h3 className="text-sm tracking-[0.2em] uppercase text-noir-cream/60 mb-1">HOURS</h3>
-              <p className="text-xl md:text-2xl font-light">5 PM — 4 AM</p>
-              <p className="text-base md:text-lg font-light text-noir-cream/80">Everyday</p>
+              <p className="text-xl md:text-2xl font-light">{HOURS.time}</p>
+              <p className="text-base md:text-lg font-light text-noir-cream/80">{HOURS.days}</p>
+              <OpenBadge className="text-noir-cream/70 mt-2" />
             </div>
 
             {/* Phone / WhatsApp */}
             <div className="flex flex-col gap-2 visit-reveal">
               <h3 className="text-sm tracking-[0.2em] uppercase text-noir-cream/60 mb-1">PHONE / WHATSAPP</h3>
-              <a href="https://wa.me/923363355558" target="_blank" rel="noopener noreferrer" className="text-xl md:text-2xl font-light hover:text-white transition-colors duration-300">
-                +92 336 3355558
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="text-xl md:text-2xl font-light hover:text-white transition-colors duration-300">
+                {PHONE_DISPLAY}
               </a>
             </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-6 mt-6 visit-reveal">
               <a 
-                href="https://maps.google.com/?q=Noir+Cafe+Tipu+Sultan+Road+Karachi" 
+                href={MAPS_URL} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-3 border border-noir-cream px-8 py-4 text-sm tracking-[0.2em] uppercase font-medium hover:bg-noir-cream hover:text-noir-green transition-colors duration-300"
@@ -109,7 +100,7 @@ const VisitNoir = () => {
                 GET DIRECTIONS &rarr;
               </a>
               <a 
-                href="https://wa.me/923363355558" 
+                href={WHATSAPP_URL} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-3 border-b border-transparent hover:border-noir-cream px-4 py-4 text-sm tracking-[0.2em] uppercase font-medium text-noir-cream/80 hover:text-noir-cream transition-colors duration-300"
@@ -127,7 +118,7 @@ const VisitNoir = () => {
             className="w-full h-full relative overflow-hidden bg-noir-dark filter grayscale contrast-125 hover:grayscale-0 hover:contrast-100 transition-all duration-700"
           >
             <iframe 
-              src="https://maps.google.com/maps?q=Noir%20Cafe%20Tipu%20Sultan%20Road%20Karachi&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              src={MAPS_EMBED_URL}
               width="100%" 
               height="100%" 
               style={{ border: 0 }} 

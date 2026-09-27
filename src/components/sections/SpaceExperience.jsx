@@ -1,8 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { useGsap } from '../../hooks/useGsap';
 
 const SpaceExperience = () => {
   const sectionRef = useRef(null);
@@ -10,68 +8,59 @@ const SpaceExperience = () => {
   const textRef = useRef(null);
   const ctaRef = useRef(null);
   
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+  useGsap(({ isMobile }) => {
+    // 1. Typography entrance animation
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: 'top 75%',
+        toggleActions: 'play none none reverse'
+      }
+    });
 
-    const ctx = gsap.context(() => {
-      // 1. Typography entrance animation
-      const tl = gsap.timeline({
+    tl.fromTo('.space-heading-line',
+      { yPercent: 100, opacity: 0 },
+      { yPercent: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' }
+    )
+    .fromTo([textRef.current, ctaRef.current],
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'power2.out' },
+      '-=0.6'
+    );
+
+    // 2. Individual Gallery Image Scrub Animations
+    const startScale = isMobile ? 1.05 : 1.12;
+    const startClip = isMobile ? 'inset(0% 0% 0% 0%)' : 'inset(8% 0% 8% 0%)';
+
+    const wrappers = gsap.utils.toArray('.gallery-item-wrapper');
+    const images = gsap.utils.toArray('.gallery-item-image');
+
+    wrappers.forEach((wrapper, i) => {
+      const img = images[i];
+
+      const scrubTl = gsap.timeline({
         scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 75%',
-          toggleActions: 'play none none reverse'
+          trigger: wrapper,
+          start: 'top bottom', // Start as soon as the image enters the viewport
+          end: 'center center', // Finish when the image is centered
+          scrub: 1.2
         }
       });
 
-      tl.fromTo('.space-heading-line',
-        { yPercent: 100, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out' }
+      // Subtle clip-path reveal
+      scrubTl.fromTo(wrapper,
+        { clipPath: startClip },
+        { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none' },
+        0
       )
-      .fromTo([textRef.current, ctaRef.current],
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'power2.out' },
-        '-=0.6'
+      // Zoom and slight parallax
+      .fromTo(img,
+        { scale: startScale, yPercent: isMobile ? 0 : 3 },
+        { scale: 1, yPercent: 0, ease: 'none' },
+        0
       );
-
-      // 2. Individual Gallery Image Scrub Animations
-      const isMobile = window.innerWidth < 768;
-      const startScale = isMobile ? 1.05 : 1.12;
-      const startClip = isMobile ? 'inset(0% 0% 0% 0%)' : 'inset(8% 0% 8% 0%)';
-
-      const wrappers = gsap.utils.toArray('.gallery-item-wrapper');
-      const images = gsap.utils.toArray('.gallery-item-image');
-
-      wrappers.forEach((wrapper, i) => {
-        const img = images[i];
-
-        const scrubTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: wrapper,
-            start: 'top bottom', // Start as soon as the image enters the viewport
-            end: 'center center', // Finish when the image is centered
-            scrub: 1.2
-          }
-        });
-
-        // Subtle clip-path reveal
-        scrubTl.fromTo(wrapper,
-          { clipPath: startClip },
-          { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none' },
-          0
-        )
-        // Zoom and slight parallax
-        .fromTo(img,
-          { scale: startScale, yPercent: isMobile ? 0 : 3 },
-          { scale: 1, yPercent: 0, ease: 'none' },
-          0
-        );
-      });
-
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+    });
+  }, sectionRef);
 
   return (
     <section 
@@ -89,12 +78,12 @@ const SpaceExperience = () => {
             </div>
             
             <h2 ref={headingRef} className="text-[3.5rem] md:text-[5rem] lg:text-[6.5rem] font-display font-medium leading-[0.85] tracking-tight uppercase">
-              <div className="overflow-hidden pb-2">
+              <span className="block overflow-hidden pb-2">
                 <span className="block space-heading-line">MORE THAN</span>
-              </div>
-              <div className="overflow-hidden pb-2">
+              </span>
+              <span className="block overflow-hidden pb-2">
                 <span className="block space-heading-line text-noir-green">JUST A CAFE.</span>
-              </div>
+              </span>
             </h2>
           </div>
 
@@ -119,27 +108,27 @@ const SpaceExperience = () => {
 
           {/* Image 1: Large Interior (Left) */}
           <div className="gallery-item-wrapper md:col-span-8 md:row-span-2 relative aspect-[4/3] md:aspect-auto h-auto md:h-[600px] overflow-hidden bg-noir-dark">
-            <img className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/interior.webp" alt="Noir Interior" />
+            <img loading="lazy" decoding="async" className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/interior.webp" alt="Noir Interior" />
           </div>
 
           {/* Image 2: Counter (Top Right) */}
           <div className="gallery-item-wrapper md:col-span-4 relative aspect-[3/4] md:aspect-auto h-auto md:h-[288px] overflow-hidden bg-noir-dark">
-            <img className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/counter.webp" alt="Noir Coffee Counter" />
+            <img loading="lazy" decoding="async" className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/counter.webp" alt="Noir Coffee Counter" />
           </div>
 
           {/* Image 3: Lifestyle (Middle Right) */}
           <div className="gallery-item-wrapper md:col-span-4 relative aspect-square md:aspect-auto h-auto md:h-[288px] overflow-hidden bg-noir-dark">
-            <img className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/lifestyle.webp" alt="Noir Lifestyle" />
+            <img loading="lazy" decoding="async" className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/lifestyle.webp" alt="Noir Lifestyle" />
           </div>
 
           {/* Image 4: Lifestyle02 (Bottom Left - Portrait) */}
           <div className="gallery-item-wrapper md:col-span-5 relative aspect-[4/5] md:aspect-auto h-auto md:h-[500px] overflow-hidden bg-noir-dark">
-            <img className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/lifestyle02.webp" alt="Noir Lifestyle Detail" />
+            <img loading="lazy" decoding="async" className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/ambience/lifestyle02.webp" alt="Noir Lifestyle Detail" />
           </div>
 
           {/* Image 5: Exterior (Bottom Right - Landscape) */}
           <div className="gallery-item-wrapper md:col-span-7 relative aspect-[16/9] md:aspect-auto h-auto md:h-[500px] overflow-hidden bg-noir-dark">
-            <img className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/hero/night.webp" alt="Noir Exterior" />
+            <img loading="lazy" decoding="async" className="gallery-item-image w-full h-full object-cover object-center" src="/assets/noir/hero/night.webp" alt="Noir Exterior" />
           </div>
 
         </div>

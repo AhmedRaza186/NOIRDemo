@@ -16,6 +16,28 @@
 }
 
 @layer base {
+  /* Night palette: swaps the tokens every utility reads (set by ThemeProvider) */
+  :root[data-theme="night"] {
+    color-scheme: dark;
+    --color-noir-black: #f1efe8;
+    --color-noir-green: #9cc5ad;
+    --color-noir-cream: #0d0f0e;
+    --color-noir-muted: #9a9892;
+    --color-noir-border: #2b2e2c;
+    --color-noir-dark: #1b1d1c;
+  }
+
+  /* Brand surfaces (deep green / black panels) keep the day tokens in both themes */
+  :root[data-theme="night"] .surface-brand {
+    color-scheme: dark;
+    --color-noir-black: #0c0c0c;
+    --color-noir-green: #0f2d22;
+    --color-noir-cream: #f4f3ef;
+    --color-noir-muted: #6b6a67;
+    --color-noir-border: #e0ded6;
+    --color-noir-dark: #181818;
+  }
+
   body {
     @apply bg-noir-cream text-noir-black font-sans antialiased selection:bg-noir-green selection:text-noir-cream overflow-x-hidden;
   }
@@ -26,6 +48,11 @@
 
   p {
     @apply text-pretty leading-relaxed;
+  }
+
+  /* Keep anchored sections clear of the fixed navbar (Lenis anchor jumps read this too) */
+  section[id] {
+    scroll-margin-top: 5rem;
   }
 
   /* Interaction Defaults & Accessibility */
@@ -43,6 +70,75 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  /* Theme switch: ThemeToggle animates a circular reveal instead of the default crossfade */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  /* Custom cursor (see components/ui/Cursor.jsx) */
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none;
+  }
+
+  html.has-custom-cursor :is(input, textarea, select) {
+    cursor: auto;
+  }
+
+  .noir-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 200;
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: #ffffff;
+    mix-blend-mode: difference;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition:
+      width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 0.3s ease,
+      opacity 0.3s ease;
+  }
+
+  .noir-cursor[data-state="link"] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .noir-cursor[data-state="label"] {
+    width: 84px;
+    height: 84px;
+    background: #0f2d22;
+    mix-blend-mode: normal;
+  }
+
+  .noir-cursor[data-state="hidden"] {
+    opacity: 0;
+  }
+
+  .noir-cursor-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    white-space: nowrap;
+    color: #f4f3ef;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .noir-cursor[data-state="label"] .noir-cursor-label {
+    opacity: 1;
   }
 }
 
@@ -63,6 +159,15 @@
 
   .hover-scale {
     @apply transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105;
+  }
+
+  /* Horizontal rails that scroll without a visible scrollbar */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   /* Typography utilities for buttons/labels */
